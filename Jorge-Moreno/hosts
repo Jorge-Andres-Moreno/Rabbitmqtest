@@ -1,0 +1,14 @@
+server_provision ansible_ssh_user=vagrant
+
+[broker]
+RabbitMQ ansible_host=192.168.56.12
+
+[tx]
+Sender ansible_host=192.168.56.13
+
+[rx1]
+Receiver1 ansible_host=192.168.56.14
+
+[rx2]
+Receiver2 ansible_host=192.168.56.15
+

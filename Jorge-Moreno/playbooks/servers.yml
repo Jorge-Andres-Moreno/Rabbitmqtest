@@ -1,0 +1,142 @@
+---
+# server installation
+- hosts: broker
+  become: yes
+  become_user: root
+  become_method: sudo
+  tasks:
+  
+    - name: Install nessesary package
+      apt: 
+        name: apt-transport-https
+        state: present
+        update_cache: yes
+
+    # Install Erlang
+    - name: Download erlang
+      get_url:
+        url: https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
+        dest: /home/vagrant/erlang-solutions_1.0_all.deb
+        mode: 0755
+
+    - name: Install erlang repository
+      apt:
+        deb: /home/vagrant/erlang-solutions_1.0_all.deb
+
+    - name: Add an Apt signing key
+      apt_key:
+        url: https://packages.erlang-solutions.com/debian/erlang_solutions.asc
+        state: present
+
+    - name: Fix unmet dependencies
+      shell: apt-get -f install
+
+    # Install RabbitMQ
+    - name: Add the rabbitmq repository's key
+      apt_key: url=https://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x6B73A36E6026DFCA
+
+    - name: Add the rabbitmq repository
+      shell: echo "deb https://dl.bintray.com/rabbitmq/debian stretch main" | tee /etc/apt/sources.list.d/bintray.rabbitmq.list
+
+    - name: Install rabbitmq-server
+      apt:
+        name: rabbitmq-server
+        state: present
+        update_cache: yes
+
+    - name: Enable rabbitmq-server to survive reboot
+      service: name=rabbitmq-server enabled=yes
+
+    - name: Create configuration file
+      shell: |
+        echo "listeners.tcp.1 = 0.0.0.0:5672" >> /etc/rabbitmq/rabbitmq.conf
+        service rabbitmq-server restart
+
+    - name: add rabbitmq user Sender
+      rabbitmq_user:
+        user: Sender
+        password: Sender
+        permissions:
+          - vhost: /
+            configure_priv: .*
+            read_priv: .*
+            write_priv: .*
+        state: present
+
+    - name: add rabbitmq user Receiver1
+      rabbitmq_user:
+        user: Receiver1
+        password: Receiver1
+        permissions:
+          - vhost: /
+            configure_priv: .*
+            read_priv: .*
+            write_priv: .*
+        state: present
+
+    - name: add rabbitmq user Consumidor2
+      rabbitmq_user:
+        user: Consumidor2
+        password: Consumidor2
+        permissions:
+          - vhost: /
+            configure_priv: .*
+            read_priv: .*
+            write_priv: .*
+        state: present
+
+- hosts: Receiver1
+  become: yes
+  become_method: sudo
+  tasks:
+
+    - name: apt-get update
+      apt:
+        update-cache: yes
+      changed_when: 0
+
+    - name: Install latest version of default-jre 'java'
+      apt:
+        name: default-jre
+        state: latest
+
+    - name: Execute the program
+      shell: nohup java -jar /vagrant/executables/consumer1.jar > log.txt &
+
+- hosts: Receiver2
+  become: yes
+  become_method: sudo
+  tasks:
+
+    - name: apt-get update
+      apt:
+        update-cache: yes
+      changed_when: 0
+
+    - name: Install latest version of default-jre 'java'
+      apt:
+        name: default-jre
+        state: latest
+
+    - name: Execute the program
+      shell: nohup java -jar /vagrant/executables/consumer2.jar > log.txt &
+
+- hosts: Sender
+  become: yes
+  become_method: sudo
+  tasks:
+
+    - name: apt-get update
+      apt:
+        update-cache: yes
+      changed_when: 0
+
+    - name: Install latest version of default-jre 'java'
+      apt:
+        name: default-jre
+        state: latest
+
+    - name: Execute the program
+      shell: nohup java -jar /vagrant/executables/sender.jar > log.txt &
+
+
