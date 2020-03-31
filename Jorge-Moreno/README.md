@@ -1,2 +1,0 @@
-# Rabbitmqtest
-Pending description.
